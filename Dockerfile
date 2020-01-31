@@ -27,6 +27,13 @@ RUN \
 RUN \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   export DEBIAN_FRONTEND 'noninteractive' && \
+  echo ' ===> Install file utility' && \
+  (cd /tmp && \
+   curl -sSL -O http://ftp.uk.debian.org/debian/pool/main/f/file/libmagic-mgc_5.35-4+deb10u1_amd64.deb && \
+   curl -sSL -O http://ftp.uk.debian.org/debian/pool/main/f/file/libmagic1_5.35-4+deb10u1_amd64.deb && \
+   curl -sSL -O http://ftp.uk.debian.org/debian/pool/main/f/file/file_5.35-4+deb10u1_amd64.deb && \
+   dpkg -i file_*.deb libmagic*.deb && \
+   rm -f file_*.deb libmagic*.deb) && \
   echo ' ===> Installing git' && \
   apt-get install -q -yy --no-install-recommends git && \
   echo ' ===> Installing ruby build tools' && \
