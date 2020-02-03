@@ -35,7 +35,4 @@
 yarn-debug.log*
 .yarn-integrity
 
-# Elastic Beanstalk Files
-.elasticbeanstalk/*
-!.elasticbeanstalk/*.cfg.yml
-!.elasticbeanstalk/*.global.yml
+/config.sh
