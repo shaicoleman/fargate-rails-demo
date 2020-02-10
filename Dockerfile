@@ -1,5 +1,6 @@
 # shared-base
 FROM ubuntu:18.04 AS shared-base
+ARG WEEKLY_ID
 COPY --from=ruby:2.6.5-slim-buster /usr/local /usr/local
 RUN \
   echo ' ===> Running apt-get update' && \
