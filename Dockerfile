@@ -27,22 +27,31 @@ RUN \
   echo ' ===> Installing yarn' && \
   apt-get install -q -yy --no-install-recommends yarn && \
   echo ' ===> Cleanup' && \
-  rm -f /usr/local/lib/ruby/gems/2.6.0/cache/*
+  apt-get clean && rm -rf /usr/local/lib/ruby/gems/2.6.0/cache/ /var/lib/apt/lists/
 
 # build-base
 FROM shared-base AS build-base
 RUN \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
+  echo ' ===> Running apt-get update' && \
+  apt-get update && \
   echo ' ===> Installing ruby build tools' && \
-  apt-get install -q -yy --no-install-recommends patch gawk g++ gcc autoconf automake bison libtool make patch pkg-config
+  apt-get install -q -yy --no-install-recommends patch gawk g++ gcc autoconf automake bison libtool make patch pkg-config && \
+  echo ' ===> Cleanup' && \
+  apt-get clean && rm -rf /var/lib/apt/lists/
 
 # build-bundler
 FROM build-base AS build-bundler
 RUN \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
+  echo ' ===> Running apt-get update' && \
+  apt-get update && \
   echo ' ===> Installing ruby libraries' && \
   apt-get install -q -yy --no-install-recommends libc6-dev libffi-dev libgdbm-dev libncurses5-dev \
-    libsqlite3-dev libyaml-dev zlib1g-dev libgmp-dev libreadline-dev libssl-dev liblzma-dev libpq-dev
+    libsqlite3-dev libyaml-dev zlib1g-dev libgmp-dev libreadline-dev libssl-dev liblzma-dev libpq-dev && \
+  echo ' ===> Cleanup' && \
+  apt-get clean && rm -rf /var/lib/apt/lists/
+
 COPY Gemfile* .ruby-version /app/
 WORKDIR /app
 RUN \
@@ -51,7 +60,8 @@ RUN \
     gem install bundler && \
     bundle config --global --jobs 4 && \
     bundle install --jobs `nproc` && \
-    rm -f /usr/local/lib/ruby/gems/2.6.0/cache/*
+    echo ' ===> Cleanup' && \
+    rm -rf /usr/local/lib/ruby/gems/2.6.0/cache/
 
 # build-yarn
 FROM build-base AS build-yarn
@@ -75,8 +85,13 @@ COPY vendor /vendor/
 
 # runtime
 FROM shared-base
+
 RUN \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
+  echo ' ===> Installing s6 supervisor' && \
+  (curl -sSL 'https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz' | tar xzf - -C /) && \
+  echo ' ===> Running apt-get update' && \
+  apt-get update && \
   echo ' ===> Installing wkhtmltopdf dependencies' && \
   apt-get install -q -yy --no-install-recommends libxrender1 libfontconfig1 libxext6 && \
   echo ' ===> Install file utility' && \
@@ -91,10 +106,21 @@ RUN \
   echo ' ===> Installing Ruby runtime dependencies' && \
   apt-get install -q -yy --no-install-recommends libyaml-dev && \
   echo ' ===> Installing extra packages' && \
-  apt-get install -q -yy --no-install-recommends jq htop ncdu strace git sqlite3 less
+  apt-get install -q -yy --no-install-recommends jq htop ncdu strace git sqlite3 less silversearcher-ag vim nano && \
+  echo ' ===> Installing nginx' && \
+  apt-get install -q -yy --no-install-recommends nginx-full && \
+  echo ' ===> Installing SSH' && \
+  apt-get install -q -yy --no-install-recommends openssh-server openssh-client && \
+  echo ' ===> Cleanup' && \
+  apt-get clean && rm -rf /var/lib/apt/lists/
+
 COPY --from=build-rails /usr/local/lib/ruby /usr/local/lib/ruby
 COPY --from=build-yarn /app/node_modules /app/node_modules
 COPY --from=build-rails /app /app
+COPY docker/services.d /etc/services.d
+
+ENTRYPOINT ["/init"]
 WORKDIR /app
 CMD ["bin/rails", "s", "-p", "3000", "-b", "0.0.0.0"]
-EXPOSE 3000
+
+EXPOSE 22 3000
