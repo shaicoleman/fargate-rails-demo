@@ -124,6 +124,4 @@ COPY docker/services.d /etc/services.d
 
 ENTRYPOINT ["/init"]
 WORKDIR /app
-CMD ["bin/rails", "s", "-p", "3000", "-b", "0.0.0.0"]
-
 EXPOSE 22 3000
