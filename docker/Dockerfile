@@ -1,0 +1,1 @@
+FROM fargate-web-app
