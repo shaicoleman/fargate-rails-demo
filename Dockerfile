@@ -92,6 +92,8 @@ RUN \
   (curl -sSL 'https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz' | tar xzf - -C /) && \
   echo ' ===> Running apt-get update' && \
   apt-get update && \
+  echo ' ===> Running apt-get upgrade' && \
+  apt-get -yy upgrade && \
   echo ' ===> Installing wkhtmltopdf dependencies' && \
   apt-get install -q -yy --no-install-recommends libxrender1 libfontconfig1 libxext6 && \
   echo ' ===> Install file utility' && \
