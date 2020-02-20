@@ -1,7 +1,8 @@
 # shared-base
-FROM ubuntu:18.04 AS shared-base
+FROM ubuntu:20.04 AS shared-base
 ARG WEEKLY_ID
 COPY --from=ruby:2.6.5-slim-buster /usr/local /usr/local
+COPY --from=node:12-buster-slim /usr/local /usr/local
 RUN \
   echo ' ===> Running apt-get update' && \
   apt-get update && \
@@ -14,17 +15,12 @@ RUN \
   apt-get install -q -yy --no-install-recommends sudo curl gnupg ca-certificates tzdata && \
   echo ' ===> Adding PostgreSQL repository' && \
   (curl -sSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - 2>/dev/null) && \
-  (echo 'deb [arch=amd64] http://apt.postgresql.org/pub/repos/apt/ bionic-pgdg main' > /etc/apt/sources.list.d/postgresql.list) && \
-  echo ' ===> Adding Node repository' && \
-  (curl -sSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - 2>/dev/null) && \
-  (echo 'deb [arch=amd64] https://deb.nodesource.com/node_12.x bionic main' > /etc/apt/sources.list.d/node-12.list) && \
+  (echo 'deb [arch=amd64] http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main' > /etc/apt/sources.list.d/postgresql.list) && \
   echo ' ===> Adding Yarn repository' && \
   (curl -sSL https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - 2>/dev/null) && \
   (echo 'deb [arch=amd64] https://dl.yarnpkg.com/debian/ stable main' > /etc/apt/sources.list.d/yarn.list) && \
   echo ' ===> Running apt-get update' && \
   apt-get update && \
-  echo ' ===> Installing nodejs' && \
-  apt-get install -q -yy --no-install-recommends nodejs && \
   echo ' ===> Installing yarn' && \
   apt-get install -q -yy --no-install-recommends yarn && \
   echo ' ===> Cleanup' && \
@@ -90,7 +86,7 @@ FROM shared-base
 RUN \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   echo ' ===> Installing s6 supervisor' && \
-  (curl -sSL 'https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz' | tar xzf - -C /) && \
+  (curl -sSL 'https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz' | tar xzf - --skip-old-files -C /) && \
   echo ' ===> Running apt-get update' && \
   apt-get update && \
   echo ' ===> Running apt-get upgrade' && \
@@ -98,12 +94,7 @@ RUN \
   echo ' ===> Installing wkhtmltopdf dependencies' && \
   apt-get install -q -yy --no-install-recommends libxrender1 libfontconfig1 libxext6 && \
   echo ' ===> Install file utility' && \
-  (cd /tmp && \
-   curl -sSL -O http://ftp.uk.debian.org/debian/pool/main/f/file/libmagic-mgc_5.35-4+deb10u1_amd64.deb && \
-   curl -sSL -O http://ftp.uk.debian.org/debian/pool/main/f/file/libmagic1_5.35-4+deb10u1_amd64.deb && \
-   curl -sSL -O http://ftp.uk.debian.org/debian/pool/main/f/file/file_5.35-4+deb10u1_amd64.deb && \
-   dpkg -i file_*.deb libmagic*.deb && \
-   rm -f file_*.deb libmagic*.deb) && \
+  apt-get install -q -yy --no-install-recommends file && \
   echo ' ===> Installing PostgreSQL 10 client' && \
   apt-get install -q -yy --no-install-recommends postgresql-client-10 && \
   echo ' ===> Installing Ruby runtime dependencies' && \
