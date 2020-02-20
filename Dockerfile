@@ -4,12 +4,16 @@ COPY --from=node:12-buster-slim /usr/local /usr/local
 COPY --from=node:12-buster-slim /opt /opt
 ARG WEEKLY_ID
 RUN \
-  echo ' ===> Cleanup' && \
-  gem uninstall --executables did_you_mean minitest net-telnet power_assert rake test-unit xmlrpc && \
+  echo ' ===> Uninstalling optional gems' && \
+  gem uninstall --install-dir /usr/local/lib/ruby/gems/2.6.0 --executables \
+    $(gem list | grep -v 'default: ' | cut -d' ' -f1) && \
+  echo ' ===> Ruby Cleanup' && \
   rm -rf /usr/local/lib/ruby/gems/2.6.0/cache && \
+  echo ' ===> Moving yarn to /usr/local' && \
   mv /opt/yarn-* /usr/local/yarn && \
   ln -fs /usr/local/yarn/bin/yarn /usr/local/bin/yarn && \
   ln -fs /usr/local/yarn/bin/yarnpkg /usr/local/bin/yarnpkg && \
+  echo ' ===> Node Cleanup' && \
   rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/docker-entrypoint.sh \
          /usr/local/bin/npm /usr/local/bin/npx && \
   find /usr/local/include/node/openssl/archs/* -maxdepth 0 -not -name 'linux-x86_64' -type d -exec rm -rf {} +
