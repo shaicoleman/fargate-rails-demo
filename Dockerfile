@@ -1,8 +1,22 @@
+# ruby-node
+FROM ruby:2.6.5-slim-buster AS ruby-node
+COPY --from=node:12-buster-slim /usr/local /usr/local
+COPY --from=node:12-buster-slim /opt /opt
+ARG WEEKLY_ID
+RUN \
+  echo ' ===> Cleanup' && \
+  gem uninstall --executables did_you_mean minitest net-telnet power_assert rake test-unit xmlrpc && \
+  rm -rf /usr/local/lib/ruby/gems/2.6.0/cache && \
+  mv /opt/yarn-* /usr/local/yarn && \
+  ln -fs /usr/local/yarn/bin/yarn /usr/local/bin/yarn && \
+  ln -fs /usr/local/yarn/bin/yarnpkg /usr/local/bin/yarnpkg && \
+  rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/docker-entrypoint.sh \
+         /usr/local/bin/npm /usr/local/bin/npx && \
+  find /usr/local/include/node/openssl/archs/* -maxdepth 0 -not -name 'linux-x86_64' -type d -exec rm -rf {} +
+
 # shared-base
 FROM ubuntu:20.04 AS shared-base
-ARG WEEKLY_ID
-COPY --from=ruby:2.6.5-slim-buster /usr/local /usr/local
-COPY --from=node:12-buster-slim /usr/local /usr/local
+COPY --from=ruby-node /usr/local /usr/local
 RUN \
   echo ' ===> Running apt-get update' && \
   apt-get update && \
@@ -16,13 +30,6 @@ RUN \
   echo ' ===> Adding PostgreSQL repository' && \
   (curl -sSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - 2>/dev/null) && \
   (echo 'deb [arch=amd64] http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main' > /etc/apt/sources.list.d/postgresql.list) && \
-  echo ' ===> Adding Yarn repository' && \
-  (curl -sSL https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - 2>/dev/null) && \
-  (echo 'deb [arch=amd64] https://dl.yarnpkg.com/debian/ stable main' > /etc/apt/sources.list.d/yarn.list) && \
-  echo ' ===> Running apt-get update' && \
-  apt-get update && \
-  echo ' ===> Installing yarn' && \
-  apt-get install -q -yy --no-install-recommends yarn && \
   echo ' ===> Cleanup' && \
   apt-get clean && rm -rf /usr/local/lib/ruby/gems/2.6.0/cache/ /var/lib/apt/lists/
 
