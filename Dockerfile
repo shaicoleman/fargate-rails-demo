@@ -129,7 +129,7 @@ RUN \
   apt-get install -q -yy --no-install-recommends jq htop ncdu strace sqlite3 less silversearcher-ag vim-tiny nano && \
   update-alternatives --install /usr/bin/vim vim /usr/bin/vim.tiny 1 && \
   echo ' ===> Installing nginx' && \
-  apt-get install -q -yy --no-install-recommends nginx-full && \
+  apt-get install -q -yy --no-install-recommends nginx-light && \
   echo ' ===> Installing SSH' && \
   apt-get install -q -yy --no-install-recommends openssh-server openssh-client && \
   echo ' ===> Cleanup' && \
