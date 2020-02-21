@@ -80,8 +80,8 @@ RUN \
     echo ' ===> yarn install' && \
     yarn install --check-files
 
-# build-rails
-FROM build-bundler AS build-rails
+# build-app-code
+FROM scratch AS build-app-code
 COPY *.js *.json *.lock *.ru *.md Rakefile .browserslistrc .gitignore /app/
 COPY app /app/app/
 COPY bin /app/bin/
@@ -90,6 +90,10 @@ COPY db /app/db/
 COPY lib /app/lib/
 COPY public/*.* /app/public/
 COPY vendor /vendor/
+
+# build-rails
+FROM build-bundler AS build-rails
+COPY --from=build-app-code /app /app
 
 # runtime
 FROM shared-base
