@@ -1,9 +1,18 @@
-# node
-ARG NODE_VERSION
-ARG RUBY_VERSION
-
-FROM node:${NODE_VERSION}-buster-slim AS node
 ARG WEEKLY_ID
+ARG RUBY_VERSION
+ARG NODE_VERSION
+
+# ruby
+FROM ruby:${RUBY_VERSION}-slim-buster AS ruby
+RUN \
+  echo ' ===> Uninstalling optional gems' && \
+  gem uninstall --install-dir /usr/local/lib/ruby/gems/* --executables \
+    $(gem list | grep -v 'default: ' | cut -d' ' -f1) && \
+  echo ' ===> Ruby Cleanup' && \
+  rm -rf /usr/local/lib/ruby/gems/*/cache
+
+# node
+FROM node:${NODE_VERSION}-buster-slim AS node
 RUN \
   echo ' ===> Moving yarn to /usr/local' && \
   mv /opt/yarn-* /usr/local/yarn && \
@@ -14,19 +23,8 @@ RUN \
          /usr/local/bin/npm /usr/local/bin/npx && \
   find /usr/local/include/node/openssl/archs/* -maxdepth 0 -not -name 'linux-x86_64' -type d -exec rm -rf {} +
 
-# ruby
-FROM ruby:${RUBY_VERSION}-slim-buster AS ruby
-ARG WEEKLY_ID
-RUN \
-  echo ' ===> Uninstalling optional gems' && \
-  gem uninstall --install-dir /usr/local/lib/ruby/gems/* --executables \
-    $(gem list | grep -v 'default: ' | cut -d' ' -f1) && \
-  echo ' ===> Ruby Cleanup' && \
-  rm -rf /usr/local/lib/ruby/gems/*/cache
-
 # shared-base
 FROM ubuntu:20.04 AS shared-base
-ARG WEEKLY_ID
 RUN \
   echo ' ===> Running apt-get update' && \
   apt-get update && \
