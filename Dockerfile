@@ -129,8 +129,11 @@ RUN \
   apt-get install -q -yy --no-install-recommends postgresql-client-10 && \
   echo ' ===> Installing Ruby runtime dependencies' && \
   apt-get install -q -yy --no-install-recommends libyaml-0-2 libffi7 && \
+  curl -sSL http://ftp.uk.debian.org/debian/pool/main/r/readline/libreadline7_7.0-5_amd64.deb -o /tmp/libreadline7_amd64.deb && \
+  dpkg -i /tmp/libreadline7_amd64.deb && \
+  rm -f /tmp/libreadline7_amd64.deb && \
   echo ' ===> Installing extra packages' && \
-  apt-get install -q -yy --no-install-recommends jq htop ncdu strace sqlite3 less silversearcher-ag vim-tiny nano && \
+  apt-get install -q -yy --no-install-recommends jq htop ncdu strace less silversearcher-ag vim-tiny nano && \
   update-alternatives --install /usr/bin/vim vim /usr/bin/vim.tiny 1 && \
   echo ' ===> Installing nginx' && \
   apt-get install -q -yy --no-install-recommends nginx-light && \
