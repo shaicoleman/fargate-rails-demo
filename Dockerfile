@@ -64,7 +64,7 @@ COPY Gemfile* .ruby-version /app/
 WORKDIR /app
 RUN \
     export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
-    echo ' ===> bundle install' && \
+    echo " ===> bundle install (`nproc` jobs)" && \
     gem install bundler && \
     bundle config --global --jobs 4 && \
     bundle install --jobs `nproc` && \
