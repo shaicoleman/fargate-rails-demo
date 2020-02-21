@@ -67,13 +67,15 @@ RUN \
 
 # ruby-bundle
 FROM ruby-dev AS ruby-bundle
+ARG BUNDLER_VERSION
 COPY Gemfile* /app/
 WORKDIR /app
 RUN \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
-  echo " ===> bundle install (`nproc` jobs)" && \
-  gem install bundler && \
+  echo " ===> gem install bundler" && \
+  gem install bundler -v=${BUNDLER_VERSION} && \
   bundle config --global --jobs 4 && \
+  echo " ===> bundle install (`nproc` jobs)" && \
   bundle install --jobs `nproc` && \
   echo ' ===> Cleanup' && \
   rm -rf /usr/local/lib/ruby/gems/*/cache/
