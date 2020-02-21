@@ -38,17 +38,8 @@ RUN \
   echo ' ===> Cleanup' && \
   apt-get clean && rm -rf /var/lib/apt/lists/
 
-# ruby-node
-FROM ubuntu AS ruby-node
-RUN \
-  echo ' ===> Adding PostgreSQL repository' && \
-  (curl -sSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - 2>/dev/null) && \
-  (echo 'deb [arch=amd64] http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main' > /etc/apt/sources.list.d/postgresql.list)
-COPY --from=ruby /usr/local /usr/local
-COPY --from=node /usr/local /usr/local
-
-# build-base
-FROM ruby-node AS build-base
+# ubuntu-dev
+FROM ubuntu AS ubuntu-dev
 RUN \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   echo ' ===> Running apt-get update' && \
@@ -58,8 +49,24 @@ RUN \
   echo ' ===> Cleanup' && \
   apt-get clean && rm -rf /var/lib/apt/lists/
 
-# build-bundler
-FROM build-base AS build-bundler
+# ruby-dev
+FROM ubuntu-dev AS ruby-dev
+COPY --from=ruby /usr/local /usr/local
+RUN \
+  export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
+  echo ' ===> Adding PostgreSQL repository' && \
+  (curl -sSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - 2>/dev/null) && \
+  (echo 'deb [arch=amd64] http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main' > /etc/apt/sources.list.d/postgresql.list) && \
+  echo ' ===> Running apt-get update' && \
+  apt-get update && \
+  echo ' ===> Installing ruby libraries' && \
+  apt-get install -q -yy --no-install-recommends libc6-dev libffi-dev libgdbm-dev libncurses5-dev \
+    libsqlite3-dev libyaml-dev zlib1g-dev libgmp-dev libreadline-dev libssl-dev liblzma-dev libpq-dev && \
+  echo ' ===> Cleanup' && \
+  apt-get clean && rm -rf /var/lib/apt/lists/
+
+# ruby-bundle
+FROM ruby-dev AS ruby-bundle
 RUN \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   echo ' ===> Running apt-get update' && \
@@ -69,7 +76,6 @@ RUN \
     libsqlite3-dev libyaml-dev zlib1g-dev libgmp-dev libreadline-dev libssl-dev liblzma-dev libpq-dev && \
   echo ' ===> Cleanup' && \
   apt-get clean && rm -rf /var/lib/apt/lists/
-
 COPY Gemfile* /app/
 WORKDIR /app
 RUN \
@@ -81,8 +87,12 @@ RUN \
     echo ' ===> Cleanup' && \
     rm -rf /usr/local/lib/ruby/gems/*/cache/
 
-# build-yarn
-FROM build-base AS build-yarn
+# node-dev
+FROM ubuntu-dev AS node-dev
+COPY --from=node /usr/local /usr/local
+
+# node-yarn
+FROM node-dev AS node-yarn
 COPY package.json yarn.lock /app/
 WORKDIR /app
 RUN \
@@ -90,8 +100,8 @@ RUN \
     echo ' ===> yarn install' && \
     yarn install --check-files
 
-# build-app-code
-FROM scratch AS build-app-code
+# code
+FROM scratch AS code
 COPY Gemfile* *.js *.json *.lock *.ru *.md Rakefile .browserslistrc .gitignore .ruby-version .node-version /app/
 COPY app /app/app/
 COPY bin /app/bin/
@@ -102,11 +112,14 @@ COPY public/*.* /app/public/
 COPY vendor /vendor/
 
 # runtime
-FROM ruby-node
+FROM ubuntu
 RUN \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   echo ' ===> Installing s6 supervisor' && \
   (curl -sSL 'https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz' | tar xzf - --skip-old-files -C /) && \
+  echo ' ===> Adding PostgreSQL repository' && \
+  (curl -sSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - 2>/dev/null) && \
+  (echo 'deb [arch=amd64] http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main' > /etc/apt/sources.list.d/postgresql.list) && \
   echo ' ===> Running apt-get update' && \
   apt-get update && \
   echo ' ===> Running apt-get upgrade' && \
@@ -128,10 +141,11 @@ RUN \
   apt-get install -q -yy --no-install-recommends openssh-server openssh-client && \
   echo ' ===> Cleanup' && \
   apt-get clean && rm -rf /var/lib/apt/lists/
-
-COPY --from=build-bundler /usr/local/lib/ruby /usr/local/lib/ruby
-COPY --from=build-yarn /app/node_modules /app/node_modules
-COPY --from=build-app-code /app /app
+COPY --from=ruby /usr/local /usr/local
+COPY --from=node /usr/local /usr/local
+COPY --from=ruby-bundle /usr/local/lib/ruby /usr/local/lib/ruby
+COPY --from=node-yarn /app/node_modules /app/node_modules
+COPY --from=code /app /app
 COPY docker/services.d /etc/services.d
 
 ENTRYPOINT ["/init"]
