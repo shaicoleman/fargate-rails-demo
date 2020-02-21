@@ -1,14 +1,10 @@
-# ruby-node
-FROM ruby:2.6.5-slim-buster AS ruby-node
-COPY --from=node:12-buster-slim /usr/local /usr/local
-COPY --from=node:12-buster-slim /opt /opt
+# node
+ARG NODE_VERSION
+ARG RUBY_VERSION
+
+FROM node:${NODE_VERSION}-buster-slim AS node
 ARG WEEKLY_ID
 RUN \
-  echo ' ===> Uninstalling optional gems' && \
-  gem uninstall --install-dir /usr/local/lib/ruby/gems/2.6.0 --executables \
-    $(gem list | grep -v 'default: ' | cut -d' ' -f1) && \
-  echo ' ===> Ruby Cleanup' && \
-  rm -rf /usr/local/lib/ruby/gems/2.6.0/cache && \
   echo ' ===> Moving yarn to /usr/local' && \
   mv /opt/yarn-* /usr/local/yarn && \
   ln -fs /usr/local/yarn/bin/yarn /usr/local/bin/yarn && \
@@ -18,9 +14,19 @@ RUN \
          /usr/local/bin/npm /usr/local/bin/npx && \
   find /usr/local/include/node/openssl/archs/* -maxdepth 0 -not -name 'linux-x86_64' -type d -exec rm -rf {} +
 
+# ruby
+FROM ruby:${RUBY_VERSION}-slim-buster AS ruby
+ARG WEEKLY_ID
+RUN \
+  echo ' ===> Uninstalling optional gems' && \
+  gem uninstall --install-dir /usr/local/lib/ruby/gems/* --executables \
+    $(gem list | grep -v 'default: ' | cut -d' ' -f1) && \
+  echo ' ===> Ruby Cleanup' && \
+  rm -rf /usr/local/lib/ruby/gems/*/cache
+
 # shared-base
 FROM ubuntu:20.04 AS shared-base
-COPY --from=ruby-node /usr/local /usr/local
+ARG WEEKLY_ID
 RUN \
   echo ' ===> Running apt-get update' && \
   apt-get update && \
@@ -36,6 +42,8 @@ RUN \
   (echo 'deb [arch=amd64] http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main' > /etc/apt/sources.list.d/postgresql.list) && \
   echo ' ===> Cleanup' && \
   apt-get clean && rm -rf /var/lib/apt/lists/
+COPY --from=ruby /usr/local /usr/local
+COPY --from=node /usr/local /usr/local
 
 # build-base
 FROM shared-base AS build-base
@@ -69,7 +77,7 @@ RUN \
     bundle config --global --jobs 4 && \
     bundle install --jobs `nproc` && \
     echo ' ===> Cleanup' && \
-    rm -rf /usr/local/lib/ruby/gems/2.6.0/cache/
+    rm -rf /usr/local/lib/ruby/gems/*/cache/
 
 # build-yarn
 FROM build-base AS build-yarn
