@@ -104,12 +104,16 @@ COPY lib /app/lib/
 COPY public/*.* /app/public/
 COPY vendor /vendor/
 
-# runtime
-FROM ubuntu AS rails
+# ubuntu-s6
+FROM ubuntu AS ubuntu-s6
+RUN \
+  echo ' ===> Installing s6 supervisor' && \
+  (curl -sSL 'https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz' | tar xzf - --skip-old-files -C /)
+
+# rails
+FROM ubuntu-s6 AS rails
 RUN \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
-  echo ' ===> Installing s6 supervisor' && \
-  (curl -sSL 'https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz' | tar xzf - --skip-old-files -C /) && \
   echo ' ===> Adding PostgreSQL repository' && \
   (curl -sSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - 2>/dev/null) && \
   (echo 'deb [arch=amd64] http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main' > /etc/apt/sources.list.d/postgresql.list) && \
