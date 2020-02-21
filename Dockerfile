@@ -23,8 +23,8 @@ RUN \
          /usr/local/bin/npm /usr/local/bin/npx && \
   find /usr/local/include/node/openssl/archs/* -maxdepth 0 -not -name 'linux-x86_64' -type d -exec rm -rf {} +
 
-# shared-base
-FROM ubuntu:20.04 AS shared-base
+# ubuntu
+FROM ubuntu:20.04 AS ubuntu
 RUN \
   echo ' ===> Running apt-get update' && \
   apt-get update && \
@@ -35,16 +35,20 @@ RUN \
   apt-get -yy upgrade && \
   echo ' ===> Installing base OS dependencies' && \
   apt-get install -q -yy --no-install-recommends sudo curl gnupg ca-certificates tzdata && \
-  echo ' ===> Adding PostgreSQL repository' && \
-  (curl -sSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - 2>/dev/null) && \
-  (echo 'deb [arch=amd64] http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main' > /etc/apt/sources.list.d/postgresql.list) && \
   echo ' ===> Cleanup' && \
   apt-get clean && rm -rf /var/lib/apt/lists/
+
+# ruby-node
+FROM ubuntu AS ruby-node
+RUN \
+  echo ' ===> Adding PostgreSQL repository' && \
+  (curl -sSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - 2>/dev/null) && \
+  (echo 'deb [arch=amd64] http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main' > /etc/apt/sources.list.d/postgresql.list)
 COPY --from=ruby /usr/local /usr/local
 COPY --from=node /usr/local /usr/local
 
 # build-base
-FROM shared-base AS build-base
+FROM ruby-node AS build-base
 RUN \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   echo ' ===> Running apt-get update' && \
@@ -66,7 +70,7 @@ RUN \
   echo ' ===> Cleanup' && \
   apt-get clean && rm -rf /var/lib/apt/lists/
 
-COPY Gemfile* .ruby-version /app/
+COPY Gemfile* /app/
 WORKDIR /app
 RUN \
     export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
@@ -88,7 +92,7 @@ RUN \
 
 # build-app-code
 FROM scratch AS build-app-code
-COPY Gemfile* *.js *.json *.lock *.ru *.md Rakefile .browserslistrc .gitignore /app/
+COPY Gemfile* *.js *.json *.lock *.ru *.md Rakefile .browserslistrc .gitignore .ruby-version .node-version /app/
 COPY app /app/app/
 COPY bin /app/bin/
 COPY config /app/config/
@@ -98,8 +102,7 @@ COPY public/*.* /app/public/
 COPY vendor /vendor/
 
 # runtime
-FROM shared-base
-
+FROM ruby-node
 RUN \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   echo ' ===> Installing s6 supervisor' && \
