@@ -117,9 +117,10 @@ RUN \
   echo ' ===> Installing PostgreSQL 10 client' && \
   apt-get install -q -yy --no-install-recommends postgresql-client-10 && \
   echo ' ===> Installing Ruby runtime dependencies' && \
-  apt-get install -q -yy --no-install-recommends libyaml-dev && \
+  apt-get install -q -yy --no-install-recommends libyaml-0-2 libffi7 && \
   echo ' ===> Installing extra packages' && \
-  apt-get install -q -yy --no-install-recommends jq htop ncdu strace git sqlite3 less silversearcher-ag vim nano && \
+  apt-get install -q -yy --no-install-recommends jq htop ncdu strace sqlite3 less silversearcher-ag vim-tiny nano && \
+  update-alternatives --install /usr/bin/vim vim /usr/bin/vim.tiny 1 && \
   echo ' ===> Installing nginx' && \
   apt-get install -q -yy --no-install-recommends nginx-full && \
   echo ' ===> Installing SSH' && \
