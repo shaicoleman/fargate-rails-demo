@@ -35,7 +35,7 @@ RUN \
   (curl -sSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - 2>/dev/null) && \
   (echo 'deb [arch=amd64] http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main' > /etc/apt/sources.list.d/postgresql.list) && \
   echo ' ===> Cleanup' && \
-  apt-get clean && rm -rf /usr/local/lib/ruby/gems/2.6.0/cache/ /var/lib/apt/lists/
+  apt-get clean && rm -rf /var/lib/apt/lists/
 
 # build-base
 FROM shared-base AS build-base
