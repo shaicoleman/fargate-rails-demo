@@ -67,25 +67,16 @@ RUN \
 
 # ruby-bundle
 FROM ruby-dev AS ruby-bundle
-RUN \
-  export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
-  echo ' ===> Running apt-get update' && \
-  apt-get update && \
-  echo ' ===> Installing ruby libraries' && \
-  apt-get install -q -yy --no-install-recommends libc6-dev libffi-dev libgdbm-dev libncurses5-dev \
-    libsqlite3-dev libyaml-dev zlib1g-dev libgmp-dev libreadline-dev libssl-dev liblzma-dev libpq-dev && \
-  echo ' ===> Cleanup' && \
-  apt-get clean && rm -rf /var/lib/apt/lists/
 COPY Gemfile* /app/
 WORKDIR /app
 RUN \
-    export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
-    echo " ===> bundle install (`nproc` jobs)" && \
-    gem install bundler && \
-    bundle config --global --jobs 4 && \
-    bundle install --jobs `nproc` && \
-    echo ' ===> Cleanup' && \
-    rm -rf /usr/local/lib/ruby/gems/*/cache/
+  export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
+  echo " ===> bundle install (`nproc` jobs)" && \
+  gem install bundler && \
+  bundle config --global --jobs 4 && \
+  bundle install --jobs `nproc` && \
+  echo ' ===> Cleanup' && \
+  rm -rf /usr/local/lib/ruby/gems/*/cache/
 
 # node-dev
 FROM ubuntu-dev AS node-dev
@@ -96,9 +87,9 @@ FROM node-dev AS node-yarn
 COPY package.json yarn.lock /app/
 WORKDIR /app
 RUN \
-    export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
-    echo ' ===> yarn install' && \
-    yarn install --check-files
+  export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
+  echo ' ===> yarn install' && \
+  yarn install --check-files
 
 # code
 FROM scratch AS code
