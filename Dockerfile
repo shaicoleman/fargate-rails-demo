@@ -82,7 +82,7 @@ RUN \
 
 # build-app-code
 FROM scratch AS build-app-code
-COPY *.js *.json *.lock *.ru *.md Rakefile .browserslistrc .gitignore /app/
+COPY Gemfile* *.js *.json *.lock *.ru *.md Rakefile .browserslistrc .gitignore /app/
 COPY app /app/app/
 COPY bin /app/bin/
 COPY config /app/config/
@@ -90,10 +90,6 @@ COPY db /app/db/
 COPY lib /app/lib/
 COPY public/*.* /app/public/
 COPY vendor /vendor/
-
-# build-rails
-FROM build-bundler AS build-rails
-COPY --from=build-app-code /app /app
 
 # runtime
 FROM shared-base
@@ -123,9 +119,9 @@ RUN \
   echo ' ===> Cleanup' && \
   apt-get clean && rm -rf /var/lib/apt/lists/
 
-COPY --from=build-rails /usr/local/lib/ruby /usr/local/lib/ruby
+COPY --from=build-bundler /usr/local/lib/ruby /usr/local/lib/ruby
 COPY --from=build-yarn /app/node_modules /app/node_modules
-COPY --from=build-rails /app /app
+COPY --from=build-app-code /app /app
 COPY docker/services.d /etc/services.d
 
 ENTRYPOINT ["/init"]
