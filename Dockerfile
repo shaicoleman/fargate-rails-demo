@@ -105,7 +105,7 @@ COPY public/*.* /app/public/
 COPY vendor /vendor/
 
 # runtime
-FROM ubuntu
+FROM ubuntu AS rails
 RUN \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   echo ' ===> Installing s6 supervisor' && \
@@ -139,6 +139,9 @@ COPY --from=node /usr/local /usr/local
 COPY --from=ruby-bundle /usr/local/lib/ruby /usr/local/lib/ruby
 COPY --from=node-yarn /app/node_modules /app/node_modules
 COPY --from=code /app /app
+
+# rails-app
+FROM rails
 COPY docker/services.d /etc/services.d
 
 ENTRYPOINT ["/init"]
