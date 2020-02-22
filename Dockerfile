@@ -49,6 +49,13 @@ RUN \
   echo ' ===> Cleanup' && \
   apt-get clean && rm -rf /var/lib/apt/lists/
 
+# code
+FROM ubuntu AS code
+COPY . /app/
+RUN \
+  cd /app && \
+  rm -rf docker/ spec/ test/
+
 # ruby-dev
 FROM ubuntu-dev AS ruby-dev
 COPY --from=ruby /usr/local /usr/local
@@ -69,8 +76,8 @@ RUN \
 FROM ruby-dev AS ruby-bundle
 ARG BUNDLER_VERSION
 COPY Gemfile* /app/
-WORKDIR /app
 RUN \
+  cd /app && \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   echo " ===> gem install bundler" && \
   gem install bundler -v=${BUNDLER_VERSION} && \
@@ -87,22 +94,11 @@ COPY --from=node /usr/local /usr/local
 # node-yarn
 FROM node-dev AS node-yarn
 COPY package.json yarn.lock /app/
-WORKDIR /app
 RUN \
+  cd /app && \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   echo ' ===> yarn install' && \
   yarn install --check-files
-
-# code
-FROM scratch AS code
-COPY Gemfile* *.js *.json *.lock *.ru *.md Rakefile .browserslistrc .gitignore .ruby-version .node-version /app/
-COPY app /app/app/
-COPY bin /app/bin/
-COPY config /app/config/
-COPY db /app/db/
-COPY lib /app/lib/
-COPY public/*.* /app/public/
-COPY vendor /vendor/
 
 # ubuntu-s6
 FROM ubuntu AS ubuntu-s6
