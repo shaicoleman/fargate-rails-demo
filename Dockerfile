@@ -45,7 +45,7 @@ RUN \
   echo ' ===> Running apt-get update' && \
   apt-get update && \
   echo ' ===> Installing ruby build tools' && \
-  apt-get install -q -yy --no-install-recommends patch gawk g++ gcc autoconf automake bison libtool make patch pkg-config && \
+  apt-get install -q -yy --no-install-recommends patch gawk g++ gcc autoconf automake bison libtool make patch pkg-config git && \
   echo ' ===> Cleanup' && \
   apt-get clean && rm -rf /var/lib/apt/lists/
 
