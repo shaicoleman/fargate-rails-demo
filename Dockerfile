@@ -54,7 +54,7 @@ FROM ubuntu AS code
 COPY . /app/
 RUN \
   cd /app && \
-  rm -rf docker/ spec/ test/
+  rm -rf Dockerfile docker/ spec/ test/
 
 # ruby-dev
 FROM ubuntu-dev AS ruby-dev
