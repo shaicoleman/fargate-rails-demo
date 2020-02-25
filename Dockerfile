@@ -3,7 +3,7 @@ ARG RUBY_VERSION
 ARG NODE_VERSION
 
 # ruby
-FROM ruby:${RUBY_VERSION}-slim-buster AS ruby
+FROM docker.io/ruby:${RUBY_VERSION}-slim-buster AS ruby
 RUN \
   echo ' ===> Uninstalling optional gems' && \
   gem uninstall --install-dir /usr/local/lib/ruby/gems/* --executables \
@@ -12,7 +12,7 @@ RUN \
   rm -rf /usr/local/lib/ruby/gems/*/cache
 
 # node
-FROM node:${NODE_VERSION}-buster-slim AS node
+FROM docker.io/node:${NODE_VERSION}-buster-slim AS node
 RUN \
   echo ' ===> Moving yarn to /usr/local' && \
   mv /opt/yarn-* /usr/local/yarn && \
@@ -24,7 +24,7 @@ RUN \
   find /usr/local/include/node/openssl/archs/* -maxdepth 0 -not -name 'linux-x86_64' -type d -exec rm -rf {} +
 
 # ubuntu
-FROM ubuntu:20.04 AS ubuntu
+FROM docker.io/ubuntu:20.04 AS ubuntu
 RUN \
   echo ' ===> Running apt-get update' && \
   apt-get update && \
