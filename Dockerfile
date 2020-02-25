@@ -1,6 +1,6 @@
-ARG WEEKLY_ID
-ARG RUBY_VERSION
 ARG NODE_VERSION
+ARG RUBY_VERSION
+ARG WEEKLY_ID
 
 # ruby
 FROM docker.io/ruby:${RUBY_VERSION}-slim-buster AS ruby
@@ -25,6 +25,7 @@ RUN \
 
 # ubuntu
 FROM docker.io/ubuntu:20.04 AS ubuntu
+ARG APP_USER
 RUN \
   echo ' ===> Running apt-get update' && \
   apt-get update && \
@@ -35,6 +36,8 @@ RUN \
   apt-get -yy upgrade && \
   echo ' ===> Installing base OS dependencies' && \
   apt-get install -q -yy --no-install-recommends sudo curl gnupg ca-certificates tzdata && \
+  echo " ===> Creating $APP_USER user" && \
+  adduser $APP_USER --gecos '' --disabled-password && \
   echo ' ===> Cleanup' && \
   apt-get clean && rm -rf /var/lib/apt/lists/
 
@@ -51,9 +54,11 @@ RUN \
 
 # code
 FROM ubuntu AS code
-COPY . /app/
+ARG APP_DIR
+ARG APP_USER
+COPY --chown=$APP_USER:$APP_USER . $APP_DIR/
 RUN \
-  cd /app && \
+  cd $APP_DIR && \
   rm -rf Dockerfile docker/ spec/ test/
 
 # ruby-dev
@@ -75,13 +80,14 @@ RUN \
 # ruby-bundle
 FROM ruby-dev AS ruby-bundle
 ARG BUNDLER_VERSION
-COPY Gemfile* /app/
+ARG APP_DIR
+ARG APP_USER
+COPY --chown=$APP_USER:$APP_USER Gemfile* $APP_DIR/
 RUN \
-  cd /app && \
+  cd $APP_DIR && \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   echo " ===> gem install bundler" && \
   gem install bundler -v=${BUNDLER_VERSION} && \
-  bundle config --global --jobs 4 && \
   echo " ===> bundle install (`nproc` jobs)" && \
   bundle install --jobs `nproc` && \
   echo ' ===> Cleanup' && \
@@ -93,9 +99,12 @@ COPY --from=node /usr/local /usr/local
 
 # node-yarn
 FROM node-dev AS node-yarn
-COPY package.json yarn.lock /app/
+ARG APP_DIR
+ARG APP_USER
+USER app
+COPY --chown=$APP_USER:$APP_USER package.json yarn.lock $APP_DIR/
 RUN \
-  cd /app && \
+  cd $APP_DIR && \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   echo ' ===> yarn install' && \
   yarn install --check-files
@@ -108,6 +117,7 @@ RUN \
 
 # rails
 FROM ubuntu-s6 AS rails
+ARG APP_DIR
 RUN \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   echo ' ===> Adding PostgreSQL repository' && \
@@ -138,13 +148,13 @@ RUN \
 COPY --from=ruby /usr/local /usr/local
 COPY --from=node /usr/local /usr/local
 COPY --from=ruby-bundle /usr/local/lib/ruby /usr/local/lib/ruby
-COPY --from=node-yarn /app/node_modules /app/node_modules
-COPY --from=code /app /app
+COPY --from=node-yarn --chown=$APP_USER:$APP_USER $APP_DIR/node_modules $APP_DIR/node_modules
+COPY --from=code --chown=$APP_USER:$APP_USER $APP_DIR $APP_DIR
 
 # rails-app
 FROM rails
+ARG APP_DIR
 COPY docker/services.d /etc/services.d
-
 ENTRYPOINT ["/init"]
-WORKDIR /app
+WORKDIR $APP_DIR
 EXPOSE 22 3000

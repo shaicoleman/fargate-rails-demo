@@ -22,6 +22,8 @@ if [[ "$old_weekly_id" != "$WEEKLY_ID" ]]; then
 fi
 
 DOCKER_BUILDKIT=1 docker build \
+  --build-arg APP_DIR=$APP_DIR \
+  --build-arg APP_USER=$APP_USER \
   --build-arg WEEKLY_ID=$WEEKLY_ID \
   --build-arg RUBY_VERSION=$RUBY_VERSION \
   --build-arg NODE_VERSION=$NODE_VERSION \
