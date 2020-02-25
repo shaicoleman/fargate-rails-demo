@@ -115,12 +115,12 @@ RUN \
   (echo 'deb [arch=amd64] http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main' > /etc/apt/sources.list.d/postgresql.list) && \
   echo ' ===> Running apt-get update' && \
   apt-get update && \
-  echo ' ===> Installing wkhtmltopdf dependencies' && \
-  apt-get install -q -yy --no-install-recommends libxrender1 libfontconfig1 libxext6 && \
-  echo ' ===> Install file utility' && \
-  apt-get install -q -yy --no-install-recommends file && \
-  echo ' ===> Installing PostgreSQL 10 client' && \
-  apt-get install -q -yy --no-install-recommends postgresql-client-10 && \
+  # echo ' ===> Installing wkhtmltopdf dependencies' && \
+  # apt-get install -q -yy --no-install-recommends libxrender1 libfontconfig1 libxext6 && \
+  # echo ' ===> Install file utility' && \
+  # apt-get install -q -yy --no-install-recommends file && \
+  # echo ' ===> Installing PostgreSQL 10 client' && \
+  # apt-get install -q -yy --no-install-recommends postgresql-client-10 && \
   echo ' ===> Installing Ruby runtime dependencies' && \
   apt-get install -q -yy --no-install-recommends libyaml-0-2 libffi7 && \
   curl -sSL http://ftp.uk.debian.org/debian/pool/main/r/readline/libreadline7_7.0-5_amd64.deb -o /tmp/libreadline7_amd64.deb && \
