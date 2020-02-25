@@ -115,8 +115,6 @@ RUN \
   (echo 'deb [arch=amd64] http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main' > /etc/apt/sources.list.d/postgresql.list) && \
   echo ' ===> Running apt-get update' && \
   apt-get update && \
-  echo ' ===> Running apt-get upgrade' && \
-  apt-get -yy upgrade && \
   echo ' ===> Installing wkhtmltopdf dependencies' && \
   apt-get install -q -yy --no-install-recommends libxrender1 libfontconfig1 libxext6 && \
   echo ' ===> Install file utility' && \
