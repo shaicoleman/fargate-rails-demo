@@ -1,6 +1,5 @@
 ARG NODE_VERSION
 ARG RUBY_VERSION
-ARG WEEKLY_ID
 
 # ruby
 FROM docker.io/ruby:${RUBY_VERSION}-slim-buster AS ruby
@@ -26,6 +25,7 @@ RUN \
 # ubuntu
 FROM docker.io/ubuntu:20.04 AS ubuntu
 ARG APP_USER
+ARG WEEKLY_ID
 RUN \
   echo ' ===> Running apt-get update' && \
   apt-get update && \
