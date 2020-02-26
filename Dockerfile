@@ -38,6 +38,8 @@ RUN \
   apt-get install -q -yy --no-install-recommends sudo curl gnupg ca-certificates tzdata && \
   echo " ===> Creating $APP_USER user" && \
   adduser $APP_USER --gecos '' --disabled-password && \
+  echo " ===> Workaround for sudo error" && \
+  (echo 'Set disable_coredump false' > /etc/sudo.conf) && \
   echo ' ===> Cleanup' && \
   apt-get clean && rm -rf /var/lib/apt/lists/
 
