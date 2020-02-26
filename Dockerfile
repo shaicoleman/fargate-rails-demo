@@ -82,16 +82,20 @@ FROM ruby-dev AS ruby-bundle
 ARG BUNDLER_VERSION
 ARG APP_DIR
 ARG APP_USER
+ARG GEM_USER_DIR
+USER $APP_USER
 COPY --chown=$APP_USER:$APP_USER Gemfile* $APP_DIR/
 RUN \
   cd $APP_DIR && \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
+  export PATH="${GEM_USER_DIR}/bin:${PATH}" && \
   echo " ===> gem install bundler" && \
-  gem install bundler -v=${BUNDLER_VERSION} && \
+  gem install --user bundler -v=${BUNDLER_VERSION} && \
   echo " ===> bundle install (`nproc` jobs)" && \
+  bundle config set deployment 'true' && \
   bundle install --jobs `nproc` && \
   echo ' ===> Cleanup' && \
-  rm -rf /usr/local/lib/ruby/gems/*/cache/
+  rm -rf ~/.bundle/cache ~/.gem/ruby/*/cache
 
 # node-dev
 FROM ubuntu-dev AS node-dev
@@ -101,7 +105,7 @@ COPY --from=node /usr/local /usr/local
 FROM node-dev AS node-yarn
 ARG APP_DIR
 ARG APP_USER
-USER app
+USER $APP_USER
 COPY --chown=$APP_USER:$APP_USER package.json yarn.lock $APP_DIR/
 RUN \
   cd $APP_DIR && \
@@ -118,6 +122,7 @@ RUN \
 # rails
 FROM ubuntu-s6 AS rails
 ARG APP_DIR
+ARG GEM_USER_DIR
 RUN \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   echo ' ===> Adding PostgreSQL repository' && \
@@ -147,14 +152,16 @@ RUN \
   apt-get clean && rm -rf /var/lib/apt/lists/
 COPY --from=ruby /usr/local /usr/local
 COPY --from=node /usr/local /usr/local
-COPY --from=ruby-bundle /usr/local/lib/ruby /usr/local/lib/ruby
+COPY --from=ruby-bundle --chown=$APP_USER:$APP_USER /home/$APP_USER/.gem /home/$APP_USER/.gem
+COPY --from=ruby-bundle --chown=$APP_USER:$APP_USER $APP_DIR/.bundle $APP_DIR/.bundle
+COPY --from=ruby-bundle --chown=$APP_USER:$APP_USER $APP_DIR/vendor/bundle $APP_DIR/vendor/bundle
 COPY --from=node-yarn --chown=$APP_USER:$APP_USER $APP_DIR/node_modules $APP_DIR/node_modules
 COPY --from=code --chown=$APP_USER:$APP_USER $APP_DIR $APP_DIR
 
 # rails-app
 FROM rails
-ARG APP_DIR
+ARG GEM_USER_DIR
 COPY docker/services.d /etc/services.d
-ENTRYPOINT ["/init"]
-WORKDIR $APP_DIR
 EXPOSE 22 3000
+USER root
+ENTRYPOINT ["/init"]
