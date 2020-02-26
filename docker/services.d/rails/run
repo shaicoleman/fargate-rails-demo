@@ -1,4 +1,5 @@
 #!/bin/sh
 cd /app
-PATH="${GEM_USER_DIR}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-sudo -u app bin/rails s -p 3000 -b 0.0.0.0
+export MALLOC_ARENA_MAX=2
+export PATH="${GEM_USER_DIR}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+exec sudo -u app bin/rails s -p 3000 -b 0.0.0.0
