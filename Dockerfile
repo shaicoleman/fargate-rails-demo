@@ -24,9 +24,12 @@ RUN \
 
 # ubuntu
 FROM docker.io/ubuntu:20.04 AS ubuntu
+COPY docker/scripts /usr/local/bin
 ARG APP_USER
 ARG WEEKLY_ID
 RUN \
+  echo ' ===> Setting up scripts' && \
+  chmod +x /usr/local/bin/ubuntu-cleanup && \
   echo ' ===> Running apt-get update' && \
   apt-get update && \
   echo ' ===> Installing eatmydata to speed up APT' && \
@@ -41,7 +44,7 @@ RUN \
   echo " ===> Workaround for sudo error" && \
   (echo 'Set disable_coredump false' > /etc/sudo.conf) && \
   echo ' ===> Cleanup' && \
-  apt-get clean && rm -rf /var/lib/apt/lists/
+  ubuntu-cleanup
 
 # ubuntu-dev
 FROM ubuntu AS ubuntu-dev
@@ -52,7 +55,7 @@ RUN \
   echo ' ===> Installing ruby build tools' && \
   apt-get install -q -yy --no-install-recommends patch gawk g++ gcc autoconf automake bison libtool make patch pkg-config git && \
   echo ' ===> Cleanup' && \
-  apt-get clean && rm -rf /var/lib/apt/lists/
+  ubuntu-cleanup
 
 # code
 FROM ubuntu AS code
@@ -77,7 +80,7 @@ RUN \
   apt-get install -q -yy --no-install-recommends libc6-dev libffi-dev libgdbm-dev libncurses5-dev \
     libsqlite3-dev libyaml-dev zlib1g-dev libgmp-dev libreadline-dev libssl-dev liblzma-dev libpq-dev && \
   echo ' ===> Cleanup' && \
-  apt-get clean && rm -rf /var/lib/apt/lists/
+  ubuntu-cleanup
 
 # ruby-bundle
 FROM ruby-dev AS ruby-bundle
@@ -151,7 +154,7 @@ RUN \
   echo ' ===> Installing SSH' && \
   apt-get install -q -yy --no-install-recommends openssh-server openssh-client && \
   echo ' ===> Cleanup' && \
-  apt-get clean && rm -rf /var/lib/apt/lists/
+  ubuntu-cleanup
 COPY --from=ruby /usr/local /usr/local
 COPY --from=node /usr/local /usr/local
 COPY --from=ruby-bundle --chown=$APP_USER:$APP_USER $GEM_USER_DIR $GEM_USER_DIR
