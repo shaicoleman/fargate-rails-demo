@@ -97,7 +97,7 @@ RUN \
   bundle config set deployment 'true' && \
   bundle install --jobs `nproc` && \
   echo ' ===> Cleanup' && \
-  rm -rf ~/.bundle/cache ~/.gem/ruby/*/cache
+  rm -rf ~/.bundle/cache $GEM_USER_DIR/cache vendor/bundle/ruby/*/cache
 
 # node-dev
 FROM ubuntu-dev AS node-dev
@@ -154,7 +154,7 @@ RUN \
   apt-get clean && rm -rf /var/lib/apt/lists/
 COPY --from=ruby /usr/local /usr/local
 COPY --from=node /usr/local /usr/local
-COPY --from=ruby-bundle --chown=$APP_USER:$APP_USER /home/$APP_USER/.gem /home/$APP_USER/.gem
+COPY --from=ruby-bundle --chown=$APP_USER:$APP_USER $GEM_USER_DIR $GEM_USER_DIR
 COPY --from=ruby-bundle --chown=$APP_USER:$APP_USER $APP_DIR/.bundle $APP_DIR/.bundle
 COPY --from=ruby-bundle --chown=$APP_USER:$APP_USER $APP_DIR/vendor/bundle $APP_DIR/vendor/bundle
 COPY --from=node-yarn --chown=$APP_USER:$APP_USER $APP_DIR/node_modules $APP_DIR/node_modules
