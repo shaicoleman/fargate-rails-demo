@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:experimental
+# syntax=docker/dockerfile:1.1.5-experimental
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
 
 ARG NODE_VERSION
@@ -97,25 +97,31 @@ ARG BUNDLER_VERSION
 ARG APP_DIR
 ARG APP_USER
 ARG GEM_USER_DIR
-USER $APP_USER
 COPY --chown=$APP_USER:$APP_USER Gemfile* $APP_DIR/
-RUN --mount=type=cache,target="/home/app/.bundle/cache",uid=1000,gid=1000,sharing=locked \
-    --mount=type=cache,target="/home/app/.gem/ruby/2.6.0/cache",uid=1000,gid=1000,sharing=locked \
-  cd $APP_DIR && \
-  export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
-  export PATH="${GEM_USER_DIR}/bin:${PATH}" && \
-  echo " ===> gem install bundler" && \
-  gem install --user bundler -v=${BUNDLER_VERSION} && \
-  echo " ===> bundle install (`nproc` jobs)" && \
-  bundle config set path "$HOME/.gem" && \
-  bundle install --jobs `nproc`
+RUN --mount=type=cache,target="/home/app/.bundle",uid=1000,gid=1000,sharing=locked \
+    --mount=type=cache,target="/home/app/.gem",uid=1000,gid=1000,sharing=locked \
+    sudo -E -H -u $APP_USER bash -c ' \
+    cd $APP_DIR && \
+    export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libeatmydata.so" && \
+    export PATH="${GEM_USER_DIR}/bin:${PATH}" && \
+    echo " ===> gem install bundler" && \
+    gem install --user bundler -v=${BUNDLER_VERSION} && \
+    echo " ===> bundle install" && \
+    bundle config set path $HOME/.gem && \
+    bundle install --jobs `nproc`'
 
 # ruby-bundle-no-cache
 FROM ruby-bundle AS ruby-bundle-no-cache
 ARG BUNDLE_USER_DIR
 ARG GEM_USER_DIR
-RUN \
-  rm -rf $BUNDLE_USER_DIR/cache $GEM_USER_DIR/cache
+USER $APP_USER
+RUN --mount=type=cache,target="/home/app/.bundle",uid=1000,gid=1000,sharing=locked \
+    --mount=type=cache,target="/home/app/.gem",uid=1000,gid=1000,sharing=locked \
+    mkdir -p ~/.cache && \
+    cp -R ~/.bundle ~/.cache/.bundle && \
+    cp -R ~/.gem ~/.cache/.gem
+#RUN \
+#  rm -rf $BUNDLE_USER_DIR/cache $GEM_USER_DIR/cache
 
 # node-dev
 FROM ubuntu-dev AS node-dev
@@ -173,8 +179,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   ubuntu-cleanup
 COPY --from=ruby /usr/local /usr/local
 COPY --from=node /usr/local /usr/local
-COPY --from=ruby-bundle-no-cache --chown=$APP_USER:$APP_USER $GEM_USER_DIR $GEM_USER_DIR
-COPY --from=ruby-bundle-no-cache --chown=$APP_USER:$APP_USER $APP_DIR/.bundle $APP_DIR/.bundle
+COPY --from=ruby-bundle-no-cache --chown=$APP_USER:$APP_USER /home/app/.cache /home/app
 COPY --from=node-yarn --chown=$APP_USER:$APP_USER $APP_DIR/node_modules $APP_DIR/node_modules
 COPY --from=code --chown=$APP_USER:$APP_USER $APP_DIR $APP_DIR
 
