@@ -95,10 +95,14 @@ FROM ruby-dev AS ruby-bundle
 ARG BUNDLER_VERSION
 ARG APP_DIR
 ARG APP_USER
+ARG BUNDLE_USER_DIR
 ARG GEM_USER_DIR
+ARG GEM_BUNDLE_DIR
 USER $APP_USER
 COPY --chown=$APP_USER:$APP_USER Gemfile* $APP_DIR/
-RUN \
+RUN --mount=type=cache,target=$BUNDLE_USER_DIR/cache,sharing=locked \
+    --mount=type=cache,target=$GEM_USER_DIR/cache,sharing=locked \
+    --mount=type=cache,target=$GEM_BUNDLE_DIR/keep-cache,sharing=locked \
   cd $APP_DIR && \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   export PATH="${GEM_USER_DIR}/bin:${PATH}" && \
@@ -106,9 +110,7 @@ RUN \
   gem install --user bundler -v=${BUNDLER_VERSION} && \
   echo " ===> bundle install (`nproc` jobs)" && \
   bundle config set deployment 'true' && \
-  bundle install --jobs `nproc` && \
-  echo ' ===> Cleanup' && \
-  rm -rf ~/.bundle/cache $GEM_USER_DIR/cache vendor/bundle/ruby/*/cache
+  bundle install --jobs `nproc`
 
 # node-dev
 FROM ubuntu-dev AS node-dev
@@ -164,6 +166,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   apt-get install -q -yy --no-install-recommends openssh-server openssh-client && \
   echo ' ===> Cleanup' && \
   ubuntu-cleanup
+
 COPY --from=ruby /usr/local /usr/local
 COPY --from=node /usr/local /usr/local
 COPY --from=ruby-bundle --chown=$APP_USER:$APP_USER $GEM_USER_DIR $GEM_USER_DIR
@@ -174,8 +177,9 @@ COPY --from=code --chown=$APP_USER:$APP_USER $APP_DIR $APP_DIR
 
 # rails-app
 FROM rails
-ARG GEM_USER_DIR
 COPY docker/services.d /etc/services.d
 EXPOSE 22 3000
 USER root
 ENTRYPOINT ["/init"]
+ARG GEM_USER_DIR
+ENV GEM_USER_DIR=$GEM_USER_DIR
