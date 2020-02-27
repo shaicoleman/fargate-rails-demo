@@ -97,28 +97,25 @@ ARG APP_DIR
 ARG APP_USER
 ARG BUNDLE_USER_DIR
 ARG GEM_USER_DIR
-ARG GEM_BUNDLE_DIR
 USER $APP_USER
 COPY --chown=$APP_USER:$APP_USER Gemfile* $APP_DIR/
 RUN --mount=type=cache,target=$BUNDLE_USER_DIR/cache,sharing=locked \
     --mount=type=cache,target=$GEM_USER_DIR/cache,sharing=locked \
-    --mount=type=cache,target=$GEM_BUNDLE_DIR/cache,sharing=locked \
   cd $APP_DIR && \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   export PATH="${GEM_USER_DIR}/bin:${PATH}" && \
   echo " ===> gem install bundler" && \
   gem install --user bundler -v=${BUNDLER_VERSION} && \
   echo " ===> bundle install (`nproc` jobs)" && \
-  bundle config set deployment 'true' && \
+  bundle config set path "$HOME/.gem" && \
   bundle install --jobs `nproc`
 
 # ruby-bundle-no-cache
 FROM ruby-bundle AS ruby-bundle-no-cache
 ARG BUNDLE_USER_DIR
-ARG GEM_BUNDLE_DIR
 ARG GEM_USER_DIR
 RUN \
-  rm -rf $BUNDLE_USER_DIR/cache $GEM_USER_DIR/cache $GEM_BUNDLE_DIR/cache
+  rm -rf $BUNDLE_USER_DIR/cache $GEM_USER_DIR/cache
 
 # node-dev
 FROM ubuntu-dev AS node-dev
@@ -178,7 +175,6 @@ COPY --from=ruby /usr/local /usr/local
 COPY --from=node /usr/local /usr/local
 COPY --from=ruby-bundle-no-cache --chown=$APP_USER:$APP_USER $GEM_USER_DIR $GEM_USER_DIR
 COPY --from=ruby-bundle-no-cache --chown=$APP_USER:$APP_USER $APP_DIR/.bundle $APP_DIR/.bundle
-COPY --from=ruby-bundle-no-cache --chown=$APP_USER:$APP_USER $APP_DIR/vendor/bundle $APP_DIR/vendor/bundle
 COPY --from=node-yarn --chown=$APP_USER:$APP_USER $APP_DIR/node_modules $APP_DIR/node_modules
 COPY --from=code --chown=$APP_USER:$APP_USER $APP_DIR $APP_DIR
 
