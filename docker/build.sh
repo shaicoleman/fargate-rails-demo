@@ -25,6 +25,7 @@ DOCKER_BUILDKIT=1 docker build \
   --build-arg APP_DIR=$APP_DIR \
   --build-arg APP_USER=$APP_USER \
   --build-arg GEM_USER_DIR=$GEM_USER_DIR \
+  --build-arg GEM_BUNDLE_DIR=$GEM_BUNDLE_DIR \
   --build-arg WEEKLY_ID=$WEEKLY_ID \
   --build-arg RUBY_VERSION=$RUBY_VERSION \
   --build-arg NODE_VERSION=$NODE_VERSION \
