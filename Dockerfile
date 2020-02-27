@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:experimental
+
 ARG NODE_VERSION
 ARG RUBY_VERSION
 
@@ -27,9 +29,13 @@ FROM docker.io/ubuntu:20.04 AS ubuntu
 COPY docker/scripts /usr/local/bin
 ARG APP_USER
 ARG WEEKLY_ID
-RUN \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
   echo ' ===> Setting up scripts' && \
   chmod +x /usr/local/bin/ubuntu-cleanup && \
+  echo ' ===> Enabling apt cache' && \
+  rm -f /etc/apt/apt.conf.d/docker-clean && \
+  (echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache) && \
   echo ' ===> Running apt-get update' && \
   apt-get update && \
   echo ' ===> Installing eatmydata to speed up APT' && \
@@ -48,7 +54,8 @@ RUN \
 
 # ubuntu-dev
 FROM ubuntu AS ubuntu-dev
-RUN \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   echo ' ===> Running apt-get update' && \
   apt-get update && \
@@ -69,7 +76,8 @@ RUN \
 # ruby-dev
 FROM ubuntu-dev AS ruby-dev
 COPY --from=ruby /usr/local /usr/local
-RUN \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   echo ' ===> Adding PostgreSQL repository' && \
   (curl -sSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - 2>/dev/null) && \
@@ -128,7 +136,8 @@ RUN \
 FROM ubuntu-s6 AS rails
 ARG APP_DIR
 ARG GEM_USER_DIR
-RUN \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   echo ' ===> Adding PostgreSQL repository' && \
   (curl -sSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - 2>/dev/null) && \
