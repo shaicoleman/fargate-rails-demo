@@ -1,4 +1,5 @@
 # syntax=docker/dockerfile:experimental
+# https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
 
 ARG NODE_VERSION
 ARG RUBY_VERSION
@@ -95,12 +96,11 @@ FROM ruby-dev AS ruby-bundle
 ARG BUNDLER_VERSION
 ARG APP_DIR
 ARG APP_USER
-ARG BUNDLE_USER_DIR
 ARG GEM_USER_DIR
 USER $APP_USER
 COPY --chown=$APP_USER:$APP_USER Gemfile* $APP_DIR/
-RUN --mount=type=cache,target=$BUNDLE_USER_DIR/cache,sharing=locked \
-    --mount=type=cache,target=$GEM_USER_DIR/cache,sharing=locked \
+RUN --mount=type=cache,target="/home/app/.bundle/cache",uid=1000,gid=1000,sharing=locked \
+    --mount=type=cache,target="/home/app/.gem/ruby/2.6.0/cache",uid=1000,gid=1000,sharing=locked \
   cd $APP_DIR && \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   export PATH="${GEM_USER_DIR}/bin:${PATH}" && \
