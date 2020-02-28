@@ -21,7 +21,9 @@ if [[ "$old_weekly_id" != "$WEEKLY_ID" ]]; then
   wait
 fi
 
-DOCKER_BUILDKIT=1 docker build \
+DOCKER_BUILDKIT=1 \
+  /usr/bin/env time --format='ALL DONE %es' \
+  docker build \
   --build-arg APP_DIR=$APP_DIR \
   --build-arg APP_USER=$APP_USER \
   --build-arg GEM_USER_DIR=$GEM_USER_DIR \
