@@ -98,17 +98,17 @@ ARG APP_DIR
 ARG APP_USER
 ARG GEM_USER_DIR
 COPY --chown=$APP_USER:$APP_USER Gemfile* $APP_DIR/
+USER $APP_USER
 RUN --mount=type=cache,target="/home/app/.bundle",uid=1000,gid=1000,sharing=locked \
     --mount=type=cache,target="/home/app/.gem",uid=1000,gid=1000,sharing=locked \
-    sudo -E -H -u $APP_USER bash -c ' \
-    cd $APP_DIR && \
+    cd /app && \
     export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libeatmydata.so" && \
     export PATH="${GEM_USER_DIR}/bin:${PATH}" && \
     echo " ===> gem install bundler" && \
     gem install --user bundler -v=${BUNDLER_VERSION} && \
     echo " ===> bundle install" && \
     bundle config set path $HOME/.gem && \
-    bundle install --jobs `nproc`'
+    bundle install --jobs `nproc`
 
 # ruby-bundle-no-cache
 FROM ruby-bundle AS ruby-bundle-no-cache
@@ -117,11 +117,9 @@ ARG GEM_USER_DIR
 USER $APP_USER
 RUN --mount=type=cache,target="/home/app/.bundle",uid=1000,gid=1000,sharing=locked \
     --mount=type=cache,target="/home/app/.gem",uid=1000,gid=1000,sharing=locked \
-    mkdir -p ~/.cache && \
-    cp -R ~/.bundle ~/.cache/.bundle && \
-    cp -R ~/.gem ~/.cache/.gem
-#RUN \
-#  rm -rf $BUNDLE_USER_DIR/cache $GEM_USER_DIR/cache
+    mkdir -p ~/ruby-bundle && \
+    cp -R ~/.bundle ~/ruby-bundle/.bundle && \
+    cp -R ~/.gem ~/ruby-bundle/.gem
 
 # node-dev
 FROM ubuntu-dev AS node-dev
@@ -147,6 +145,8 @@ RUN \
 
 # rails
 FROM ubuntu-s6 AS rails
+COPY --from=ruby /usr/local /usr/local
+COPY --from=node /usr/local /usr/local
 ARG APP_DIR
 ARG GEM_USER_DIR
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -177,9 +177,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   apt-get install -q -yy --no-install-recommends openssh-server openssh-client && \
   echo ' ===> Cleanup' && \
   ubuntu-cleanup
-COPY --from=ruby /usr/local /usr/local
-COPY --from=node /usr/local /usr/local
-COPY --from=ruby-bundle-no-cache --chown=$APP_USER:$APP_USER /home/app/.cache /home/app
+COPY --from=ruby-bundle-no-cache --chown=$APP_USER:$APP_USER /home/$APP_USER/ruby-bundle /home/$APP_USER
 COPY --from=node-yarn --chown=$APP_USER:$APP_USER $APP_DIR/node_modules $APP_DIR/node_modules
 COPY --from=code --chown=$APP_USER:$APP_USER $APP_DIR $APP_DIR
 
