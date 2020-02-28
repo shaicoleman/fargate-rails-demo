@@ -105,7 +105,7 @@ RUN --mount=type=cache,target="/home/app/.bundle",uid=1000,gid=1000,sharing=lock
     export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libeatmydata.so" && \
     export PATH="${GEM_USER_DIR}/bin:${PATH}" && \
     echo " ===> gem install bundler" && \
-    gem install --user bundler -v=${BUNDLER_VERSION} && \
+    gem install --user bundler -v=${BUNDLER_VERSION} --conservative && \
     echo " ===> bundle install" && \
     bundle config set path $HOME/.gem && \
     bundle install --jobs `nproc`
