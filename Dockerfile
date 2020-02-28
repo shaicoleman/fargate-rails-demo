@@ -112,8 +112,6 @@ RUN --mount=type=cache,target="/home/app/.bundle",uid=1000,gid=1000,sharing=lock
 
 # ruby-bundle-no-cache
 FROM ruby-bundle AS ruby-bundle-no-cache
-ARG BUNDLE_USER_DIR
-ARG GEM_USER_DIR
 USER $APP_USER
 RUN --mount=type=cache,target="/home/app/.bundle",uid=1000,gid=1000,sharing=locked \
     --mount=type=cache,target="/home/app/.gem",uid=1000,gid=1000,sharing=locked \
@@ -131,11 +129,18 @@ ARG APP_DIR
 ARG APP_USER
 USER $APP_USER
 COPY --chown=$APP_USER:$APP_USER package.json yarn.lock $APP_DIR/
-RUN \
+RUN --mount=type=cache,target="/app/node_modules",uid=1000,gid=1000,sharing=locked \
   cd $APP_DIR && \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   echo ' ===> yarn install' && \
   yarn install --check-files
+
+FROM node-yarn AS node-yarn-no-cache
+USER $APP_USER
+RUN --mount=type=cache,target="/app/node_modules",uid=1000,gid=1000,sharing=locked \
+    mkdir -p ~/node-yarn && \
+    cp -R /app/node_modules ~/node-yarn/node_modules && \
+    ls ~/node-yarn/node_modules
 
 # ubuntu-s6
 FROM ubuntu AS ubuntu-s6
@@ -178,7 +183,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   echo ' ===> Cleanup' && \
   ubuntu-cleanup
 COPY --from=ruby-bundle-no-cache --chown=$APP_USER:$APP_USER /home/$APP_USER/ruby-bundle /home/$APP_USER
-COPY --from=node-yarn --chown=$APP_USER:$APP_USER $APP_DIR/node_modules $APP_DIR/node_modules
+COPY --from=node-yarn-no-cache --chown=$APP_USER:$APP_USER /home/$APP_USER/node-yarn $APP_DIR
 COPY --from=code --chown=$APP_USER:$APP_USER $APP_DIR $APP_DIR
 
 # rails-app
