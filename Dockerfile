@@ -98,12 +98,13 @@ ARG APP_USER
 ARG GEM_USER_DIR
 COPY --chown=$APP_USER:$APP_USER Gemfile* $APP_DIR/
 USER $APP_USER
-RUN --mount=type=cache,target="/home/app/.bundle",uid=1000,gid=1000,sharing=locked \
-    --mount=type=cache,target="/home/app/.gem",uid=1000,gid=1000,sharing=locked \
+RUN --mount=type=cache,target="/home/app/.gem",uid=1000,gid=1000,sharing=locked \
+  echo " ===> gem install bundler" && \
+  gem install --user bundler -v=${BUNDLER_VERSION} --conservative
+RUN --mount=type=cache,target="/home/app/.gem",uid=1000,gid=1000,sharing=locked \
+    --mount=type=cache,target="/home/app/.bundle",uid=1000,gid=1000,sharing=locked \
   cd $APP_DIR && \
   export PATH="${GEM_USER_DIR}/bin:${PATH}" && \
-  echo " ===> gem install bundler" && \
-  gem install --user bundler -v=${BUNDLER_VERSION} --conservative && \
   echo " ===> bundle install" && \
   bundle config set path $HOME/.gem && \
   bundle install --jobs `nproc`
