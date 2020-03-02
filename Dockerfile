@@ -55,9 +55,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 # ubuntu-dev
 FROM ubuntu AS ubuntu-dev
+ENV LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so'
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
-  export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   echo ' ===> Running apt-get update' && \
   apt-get update && \
   echo ' ===> Installing ruby build tools' && \
@@ -79,7 +79,6 @@ FROM ubuntu-dev AS ruby-dev
 COPY --from=ruby /usr/local /usr/local
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
-  export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   echo ' ===> Adding PostgreSQL repository' && \
   (curl -sSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - 2>/dev/null) && \
   (echo 'deb [arch=amd64] http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main' > /etc/apt/sources.list.d/postgresql.list) && \
@@ -101,23 +100,22 @@ COPY --chown=$APP_USER:$APP_USER Gemfile* $APP_DIR/
 USER $APP_USER
 RUN --mount=type=cache,target="/home/app/.bundle",uid=1000,gid=1000,sharing=locked \
     --mount=type=cache,target="/home/app/.gem",uid=1000,gid=1000,sharing=locked \
-    cd /app && \
-    export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libeatmydata.so" && \
-    export PATH="${GEM_USER_DIR}/bin:${PATH}" && \
-    echo " ===> gem install bundler" && \
-    gem install --user bundler -v=${BUNDLER_VERSION} --conservative && \
-    echo " ===> bundle install" && \
-    bundle config set path $HOME/.gem && \
-    bundle install --jobs `nproc`
+  cd $APP_DIR && \
+  export PATH="${GEM_USER_DIR}/bin:${PATH}" && \
+  echo " ===> gem install bundler" && \
+  gem install --user bundler -v=${BUNDLER_VERSION} --conservative && \
+  echo " ===> bundle install" && \
+  bundle config set path $HOME/.gem && \
+  bundle install --jobs `nproc`
 
 # ruby-bundle-no-cache
 FROM ruby-bundle AS ruby-bundle-no-cache
 USER $APP_USER
 RUN --mount=type=cache,target="/home/app/.bundle",uid=1000,gid=1000,sharing=locked \
     --mount=type=cache,target="/home/app/.gem",uid=1000,gid=1000,sharing=locked \
-    mkdir -p ~/ruby-bundle && \
-    cp -R ~/.bundle ~/ruby-bundle/.bundle && \
-    cp -R ~/.gem ~/ruby-bundle/.gem
+  mkdir -p ~/ruby-bundle && \
+  cp -R ~/.bundle ~/ruby-bundle/.bundle && \
+  cp -R ~/.gem ~/ruby-bundle/.gem
 
 # node-dev
 FROM ubuntu-dev AS node-dev
@@ -131,16 +129,15 @@ USER $APP_USER
 COPY --chown=$APP_USER:$APP_USER package.json yarn.lock $APP_DIR/
 RUN --mount=type=cache,target="/app/node_modules",uid=1000,gid=1000,sharing=locked \
   cd $APP_DIR && \
-  export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   echo ' ===> yarn install' && \
   yarn install --check-files
 
 FROM node-yarn AS node-yarn-no-cache
 USER $APP_USER
 RUN --mount=type=cache,target="/app/node_modules",uid=1000,gid=1000,sharing=locked \
-    mkdir -p ~/node-yarn && \
-    cp -R /app/node_modules ~/node-yarn/node_modules && \
-    ls ~/node-yarn/node_modules
+  mkdir -p ~/node-yarn && \
+  cp -R /app/node_modules ~/node-yarn/node_modules && \
+  ls ~/node-yarn/node_modules
 
 # ubuntu-s6
 FROM ubuntu AS ubuntu-s6
