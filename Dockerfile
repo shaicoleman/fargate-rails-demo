@@ -137,7 +137,7 @@ FROM node-yarn AS node-yarn-no-cache
 USER $APP_USER
 RUN --mount=type=cache,target="/app/node_modules",uid=1000,gid=1000,sharing=locked \
   mkdir -p ~/node-yarn && \
-  cp -R /app/node_modules ~/node-yarn/node_modules && \
+  cp -R $APP_DIR/node_modules ~/node-yarn/node_modules && \
   ls ~/node-yarn/node_modules
 
 # ubuntu-s6
