@@ -38,14 +38,14 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   rm -f /etc/apt/apt.conf.d/docker-clean && \
   (echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache) && \
   echo ' ===> Running apt-get update' && \
-  apt-get update && \
+  apt-get update -qq && \
   echo ' ===> Installing eatmydata to speed up APT' && \
-  apt-get -yy install eatmydata && \
+  apt-get install -qq -yy --no-install-recommends eatmydata && \
   export LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so' && \
   echo ' ===> Running apt-get upgrade' && \
-  apt-get -yy upgrade && \
+  apt-get upgrade -qq -yy && \
   echo ' ===> Installing base OS dependencies' && \
-  apt-get install -q -yy --no-install-recommends sudo curl gnupg ca-certificates tzdata && \
+  apt-get install -qq -yy --no-install-recommends sudo curl gnupg ca-certificates tzdata && \
   echo " ===> Creating $APP_USER user" && \
   adduser $APP_USER --gecos '' --disabled-password && \
   echo " ===> Workaround for sudo error" && \
@@ -59,9 +59,9 @@ ENV LD_PRELOAD='/usr/lib/x86_64-linux-gnu/libeatmydata.so'
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
   echo ' ===> Running apt-get update' && \
-  apt-get update && \
+  apt-get update -qq && \
   echo ' ===> Installing ruby build tools' && \
-  apt-get install -q -yy --no-install-recommends patch gawk g++ gcc autoconf automake bison libtool make patch pkg-config git && \
+  apt-get install -qq -yy --no-install-recommends patch gawk g++ gcc autoconf automake bison libtool make patch pkg-config git && \
   echo ' ===> Cleanup' && \
   ubuntu-cleanup
 
@@ -83,9 +83,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   (curl -sSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - 2>/dev/null) && \
   (echo 'deb [arch=amd64] http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main' > /etc/apt/sources.list.d/postgresql.list) && \
   echo ' ===> Running apt-get update' && \
-  apt-get update && \
+  apt-get update -qq && \
   echo ' ===> Installing ruby libraries' && \
-  apt-get install -q -yy --no-install-recommends libc6-dev libffi-dev libgdbm-dev libncurses5-dev \
+  apt-get install -qq -yy --no-install-recommends libc6-dev libffi-dev libgdbm-dev libncurses5-dev \
     libsqlite3-dev libyaml-dev zlib1g-dev libgmp-dev libreadline-dev libssl-dev liblzma-dev libpq-dev && \
   echo ' ===> Cleanup' && \
   ubuntu-cleanup
@@ -107,7 +107,7 @@ RUN --mount=type=cache,target="/home/app/.gem",uid=1000,gid=1000,sharing=locked 
   export PATH="${GEM_USER_DIR}/bin:${PATH}" && \
   echo " ===> bundle install" && \
   bundle config set path $HOME/.gem && \
-  bundle install --jobs `nproc`
+  bundle install --quiet --jobs `nproc`
 
 # ruby-bundle-no-cache
 FROM ruby-bundle AS ruby-bundle-no-cache
@@ -131,14 +131,13 @@ COPY --chown=$APP_USER:$APP_USER package.json yarn.lock $APP_DIR/
 RUN --mount=type=cache,target="/app/node_modules",uid=1000,gid=1000,sharing=locked \
   cd $APP_DIR && \
   echo ' ===> yarn install' && \
-  yarn install --check-files
+  yarn install --quiet --check-files
 
 FROM node-yarn AS node-yarn-no-cache
 USER $APP_USER
 RUN --mount=type=cache,target="/app/node_modules",uid=1000,gid=1000,sharing=locked \
   mkdir -p ~/node-yarn && \
-  cp -R $APP_DIR/node_modules ~/node-yarn/node_modules && \
-  ls ~/node-yarn/node_modules
+  cp -R $APP_DIR/node_modules ~/node-yarn/node_modules
 
 # ubuntu-s6
 FROM ubuntu AS ubuntu-s6
@@ -159,25 +158,25 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   (curl -sSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - 2>/dev/null) && \
   (echo 'deb [arch=amd64] http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main' > /etc/apt/sources.list.d/postgresql.list) && \
   echo ' ===> Running apt-get update' && \
-  apt-get update && \
+  apt-get update -qq && \
   # echo ' ===> Installing wkhtmltopdf dependencies' && \
-  # apt-get install -q -yy --no-install-recommends libxrender1 libfontconfig1 libxext6 && \
+  # apt-get install -qq -yy --no-install-recommends libxrender1 libfontconfig1 libxext6 && \
   # echo ' ===> Install file utility' && \
-  # apt-get install -q -yy --no-install-recommends file && \
+  # apt-get install -qq -yy --no-install-recommends file && \
   # echo ' ===> Installing PostgreSQL 10 client' && \
-  # apt-get install -q -yy --no-install-recommends postgresql-client-10 && \
+  # apt-get install -qq -yy --no-install-recommends postgresql-client-10 && \
   echo ' ===> Installing Ruby runtime dependencies' && \
-  apt-get install -q -yy --no-install-recommends libyaml-0-2 libffi7 && \
+  apt-get install -qq -yy --no-install-recommends libyaml-0-2 libffi7 && \
   curl -sSL http://ftp.uk.debian.org/debian/pool/main/r/readline/libreadline7_7.0-5_amd64.deb -o /tmp/libreadline7_amd64.deb && \
   dpkg -i /tmp/libreadline7_amd64.deb && \
   rm -f /tmp/libreadline7_amd64.deb && \
   echo ' ===> Installing extra packages' && \
-  apt-get install -q -yy --no-install-recommends jq htop ncdu strace less silversearcher-ag vim-tiny nano && \
+  apt-get install -qq -yy --no-install-recommends jq htop ncdu strace less silversearcher-ag vim-tiny nano && \
   update-alternatives --install /usr/bin/vim vim /usr/bin/vim.tiny 1 && \
   echo ' ===> Installing nginx' && \
-  apt-get install -q -yy --no-install-recommends nginx-light && \
+  apt-get install -qq -yy --no-install-recommends nginx-light && \
   echo ' ===> Installing SSH' && \
-  apt-get install -q -yy --no-install-recommends openssh-server openssh-client && \
+  apt-get install -qq -yy --no-install-recommends openssh-server openssh-client && \
   echo ' ===> Cleanup' && \
   ubuntu-cleanup
 COPY --from=ruby-bundle-no-cache --chown=$APP_USER:$APP_USER /home/$APP_USER/ruby-bundle /home/$APP_USER
