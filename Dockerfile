@@ -116,7 +116,8 @@ RUN --mount=type=cache,target="/home/app/.bundle",uid=1000,gid=1000,sharing=lock
     --mount=type=cache,target="/home/app/.gem",uid=1000,gid=1000,sharing=locked \
   mkdir -p ~/ruby-bundle && \
   cp -R ~/.bundle ~/ruby-bundle/.bundle && \
-  cp -R ~/.gem ~/ruby-bundle/.gem
+  cp -R ~/.gem ~/ruby-bundle/.gem && \
+  rm -rf ~/ruby-bundle/.bundle/cache ~/ruby-bundle/.gem/ruby/*/cache
 
 # node-dev
 FROM ubuntu-dev AS node-dev
