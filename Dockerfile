@@ -48,6 +48,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   apt-get install -qq -yy --no-install-recommends sudo curl gnupg ca-certificates tzdata && \
   echo " ===> Creating $APP_USER user" && \
   adduser $APP_USER --gecos '' --disabled-password && \
+  echo " ===> Giving $APP_USER user sudo access" && \
+  usermod -aG sudo $APP_USER && \
   echo " ===> Workaround for sudo error" && \
   (echo 'Set disable_coredump false' > /etc/sudo.conf) && \
   echo ' ===> Cleanup' && \
@@ -180,7 +182,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   apt-get install -qq -yy --no-install-recommends openssh-server openssh-client && \
   echo ' ===> Cleanup' && \
   ubuntu-cleanup
-COPY docker/ssh/sshd_config /etc/ssh/sshd_config
+COPY docker/etc/ssh/sshd_config /etc/ssh/sshd_config
 RUN \
   mkdir -p /home/$APP_USER/.ssh && \
   curl -sSL https://github.com/shaicoleman.keys >> /home/$APP_USER/.ssh/authorized_keys && \
