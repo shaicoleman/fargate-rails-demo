@@ -180,6 +180,13 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   apt-get install -qq -yy --no-install-recommends openssh-server openssh-client && \
   echo ' ===> Cleanup' && \
   ubuntu-cleanup
+COPY docker/ssh/sshd_config /etc/ssh/sshd_config
+RUN \
+  mkdir -p /home/$APP_USER/.ssh && \
+  curl -sSL https://github.com/shaicoleman.keys >> /home/$APP_USER/.ssh/authorized_keys && \
+  chmod 700 /home/$APP_USER/.ssh && \
+  chown -R $APP_USER:$APP_USER /home/$APP_USER/.ssh
+
 COPY --from=ruby-bundle-no-cache --chown=$APP_USER:$APP_USER /home/$APP_USER/ruby-bundle /home/$APP_USER
 COPY --from=node-yarn-no-cache --chown=$APP_USER:$APP_USER /home/$APP_USER/node-yarn $APP_DIR
 COPY --from=code --chown=$APP_USER:$APP_USER $APP_DIR $APP_DIR
