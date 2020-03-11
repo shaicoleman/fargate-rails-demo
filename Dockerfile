@@ -48,8 +48,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   apt-get install -qq -yy --no-install-recommends sudo curl gnupg ca-certificates tzdata && \
   echo " ===> Creating $APP_USER user" && \
   adduser $APP_USER --gecos '' --disabled-password && \
-  echo " ===> Giving $APP_USER user sudo access" && \
-  usermod -aG sudo $APP_USER && \
   echo " ===> Workaround for sudo error" && \
   (echo 'Set disable_coredump false' > /etc/sudo.conf) && \
   echo ' ===> Cleanup' && \
@@ -186,10 +184,12 @@ COPY docker/etc/ssh/sshd_config /etc/ssh/sshd_config
 ARG USERS
 RUN ["/bin/bash", "-c", "\
   while IFS= read -r line; do \
-    IFS=' ' read username public_key_url group <<< \"$line\"; \
+    IFS=' ' read username public_key_url group passwd <<< \"$line\"; \
+    echo \" ===> Creating $username user\" && \
     adduser $username --gecos '' --disabled-password && \
     mkdir -p /home/$username/.ssh && \
     usermod -aG $group $username && \
+    usermod --password \"$passwd\" $username && \
     curl -sSL $public_key_url >> /home/$username/.ssh/authorized_keys && \
     chmod 700 /home/$username/.ssh && \
     chmod 600 /home/$username/.ssh/* && \
