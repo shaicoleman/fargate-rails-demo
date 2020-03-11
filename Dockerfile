@@ -183,11 +183,18 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   echo ' ===> Cleanup' && \
   ubuntu-cleanup
 COPY docker/etc/ssh/sshd_config /etc/ssh/sshd_config
-RUN \
-  mkdir -p /home/$APP_USER/.ssh && \
-  curl -sSL https://github.com/shaicoleman.keys >> /home/$APP_USER/.ssh/authorized_keys && \
-  chmod 700 /home/$APP_USER/.ssh && \
-  chown -R $APP_USER:$APP_USER /home/$APP_USER/.ssh
+ARG USERS
+RUN ["/bin/bash", "-c", "\
+  while IFS= read -r line; do \
+    IFS=' ' read username public_key_url group <<< \"$line\"; \
+    adduser $username --gecos '' --disabled-password && \
+    mkdir -p /home/$username/.ssh && \
+    usermod -aG $group $username && \
+    curl -sSL $public_key_url >> /home/$username/.ssh/authorized_keys && \
+    chmod 700 /home/$username/.ssh && \
+    chmod 600 /home/$username/.ssh/* && \
+    chown -R $username:$username /home/$username/.ssh ; \
+  done <<< \"$USERS\" "]
 
 COPY --from=ruby-bundle-no-cache --chown=$APP_USER:$APP_USER /home/$APP_USER/ruby-bundle /home/$APP_USER
 COPY --from=node-yarn-no-cache --chown=$APP_USER:$APP_USER /home/$APP_USER/node-yarn $APP_DIR

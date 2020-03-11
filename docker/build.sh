@@ -31,6 +31,7 @@ DOCKER_BUILDKIT=1 \
   --build-arg RUBY_VERSION=$RUBY_VERSION \
   --build-arg NODE_VERSION=$NODE_VERSION \
   --build-arg BUNDLER_VERSION=$BUNDLER_VERSION \
+  --build-arg USERS="$USERS" \
   --progress=plain \
   --file $dockerfile \
   -t fargate-web-app ${to} &&
