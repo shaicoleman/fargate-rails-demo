@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.1.7-experimental
+# syntax=docker/dockerfile:experimental
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
 
 ARG NODE_VERSION
