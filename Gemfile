@@ -1,8 +1,8 @@
 source 'https://rubygems.org'
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-gem 'rails', '6.1.0'
-gem 'nokogiri', '>= 1.11.0.rc2'
+gem 'rails', '6.1.3.1'
+gem 'nokogiri'
 gem 'sqlite3'
 # Use sqlite3 as the database for Active Record
 # gem 'sqlite3', '~> 1.4'
